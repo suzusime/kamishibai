@@ -210,11 +210,11 @@ sub process_manuscript {
 
 # ここから内容定義
 section "講座の内容";
-wt 1;
+wt 5;
 i1 "ご注文は、うさぎですか？";
-wt 2;
+wt 5;
 i1 "スクリプトを書いてみよう";
-wt 3;
+wt 5;
 
 # 実際の出力処理
 # print Dumper @manuscript;
