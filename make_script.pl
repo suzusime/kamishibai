@@ -30,6 +30,14 @@ my $font = Imager::Font->new(
     aa => 1)
     or die "Cannot load $font_filename: ", Imager->errstr;
 
+# フォントの定義
+my $jimaku_font_filename = "GenShinGothic-P-Bold.ttf";
+my $jimaku_font = Imager::Font->new(
+    file => $midashi_font_filename,
+    color => 'white',
+    aa => 1)
+    or die "Cannot load $midashi_font_filename: ", Imager->errstr;
+
 # 背景画像を開く
 my $bgimg = Imager->new(file=>"nc184832.png")
     or die Imager->errstr();
@@ -102,6 +110,14 @@ sub i1 {
 
 # waitをかける
 sub wt {
+    # あとで字幕をつけることも考えて、新しいページをつくることにする
+    my %page = (
+        continue => 1,
+        type => "talk",
+        elms => [],
+    );
+    push @manuscript, \%page;
+
     my ($second) = @_;
     my %elm = (
         type => "wt",
@@ -190,10 +206,24 @@ sub draw_i1 {
     $last_y += $loc_bottom_margin;
 }
 
+sub draw_jimaku {
+    my ($src_text) = @_;
+    my $text_size = 20;
+
+    # めんどいのでとりあえず一行だけ対応
+    my $text = $src_text;
+    $jimaku_font->align(
+        string => $text,
+        size => $text_size,
+        x => 640,
+        y => 660,
+        halign => 'center',
+        image => $img);
+}
+
 sub get_wav_length {
     my ($wavname) = @_;
     sleep(1);
-    # Audio::Wavは不正確な情報を返すのでやめる
     my $read = Audio::Wav -> read( $wavname )
         or die "Can't open $wavname: $!";
     my $length = $read->length_seconds();
@@ -233,10 +263,15 @@ sub process_manuscript {
         }
 
         # 描画処理
+        my $prev_img = $img->copy();#字幕の場合あとで消すので前のものをおいておく
+        my $will_be_reverted = 0;#あとで書き戻すか
         my $ptype = $page->{type};
         if ( $ptype eq "section") { draw_section $page->{text} }
         elsif ( $ptype eq "i1") { draw_i1 $page->{text} }
-        elsif ( $ptype eq "talk") { }
+        elsif ( $ptype eq "talk") {
+            draw_jimaku $page->{text};
+            $will_be_reverted=1;
+        }
         else { die "This page type has not implemented: $ptype" }
 
         # 音声を持っているかのフラグ
@@ -274,6 +309,7 @@ sub process_manuscript {
         # 次へ進む
         $page_counter++;
         $elapsed_time += $continue_time;
+        $img = $prev_img if $will_be_reverted; #書き戻す
     }
 }
 
