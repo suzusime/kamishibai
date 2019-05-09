@@ -253,8 +253,10 @@ sub make_voice {
     my ($page_num, $text) = @_;
     my $wavname = "v${page_num}.wav";
     my $wavpath = "$dirpath/$intermediate_dir/$wavname";
+    print "generating voice $wavname...";
     my $command = "seikasay.exe -cid $cid -save $wavpath -t \"$text\"";
     system($command);
+    print " finish.\n";
     my $length = get_wav_length $wavname;
     return $length;
 }
@@ -311,8 +313,10 @@ sub process_manuscript {
         $img_plus_char->rubthrough(src=>$charimg,
             tx=>930, ty=>220);
         my $output_name = "${output_prefix}${page_num}.png";
+        print "generating image $output_name...";
         $img_plus_char->write(file=>"$intermediate_dir/$output_name")
             or die "Cannot save $output_name: ", $img.errstr;
+        print " finish.\n";
 
         # 台本へ追加
         $movie_script .= "$elapsed_time $continue_time $has_voice $output_name\n";
@@ -352,7 +356,9 @@ wt 5;
 # print Dumper @manuscript;
 process_manuscript;
 
+print "saving movie_script...";
 open (my $fh_movie_script, ">", "$intermediate_dir/movie_script.txt")
     or die "Can't open movie_script.txt: $!";
 print $fh_movie_script $movie_script;
+print " finish.\n";
 close $fh_movie_script or die "$fh_movie_script: $!";
