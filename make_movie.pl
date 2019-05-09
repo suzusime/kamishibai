@@ -22,7 +22,7 @@ while (<$fh>) {
     my $number = $1;
     my $output_name = "m${number}.mp4";
     system "ffmpeg -y -loop 1 -i $image_name -t $continue -vcodec libx264 -pix_fmt yuv420p $output_name";
-    $movie_list .= "$output_name\n"
+    $movie_list .= "file $output_name\n"
 }
 
 open(my $fh_list, ">", "movie_list.txt")
