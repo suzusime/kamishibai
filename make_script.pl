@@ -264,7 +264,7 @@ sub make_voice {
 # @manuscriptに組み上げた台本を処理する
 sub process_manuscript {
     foreach my $page (@manuscript) {
-        my $page_num = sprintf("%04d", $page_counter);
+        my $page_num = sprintf("%06d", $page_counter);
 
         # ページが切り替わる場合は初期化する
         if (! $page->{continue} ){
