@@ -12,7 +12,10 @@ Encode::Locale::decode_argv;
 
 my $movie_list = "";
 
-my $script_name = "movie_script.txt";
+# 中間ファイルを生成するフォルダ名
+my $intermediate_dir = "intermediate";
+
+my $script_name = "$intermediate_dir/movie_script.txt";
 open(my $fh, "<", $script_name)
     or die "Can't open $script_name: $!";
 
@@ -27,14 +30,14 @@ while (<$fh>) {
     my $output_name = "m${number}.mp4";
     if($has_voice){
         my $voice_name = "v${number}.wav";
-        system "ffmpeg -y -i $voice_name -loop 1 -i $image_name -t $continue -vcodec libx264 -pix_fmt yuv420p -c:a aac -ac 2 -ar 44100 $output_name";
+        system "ffmpeg -y -i $intermediate_dir/$voice_name -loop 1 -i $intermediate_dir/$image_name -t $continue -vcodec libx264 -pix_fmt yuv420p -c:a aac -ac 2 -ar 44100 $intermediate_dir/$output_name";
     } else {
-        system "ffmpeg -y -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -loop 1 -i $image_name -t $continue -vcodec libx264 -pix_fmt yuv420p $output_name";
+        system "ffmpeg -y -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -loop 1 -i $intermediate_dir/$image_name -t $continue -vcodec libx264 -pix_fmt yuv420p $intermediate_dir/$output_name";
     }
     $movie_list .= "file $output_name\n"
 }
 
-open(my $fh_list, ">", "movie_list.txt")
+open(my $fh_list, ">", "$intermediate_dir/movie_list.txt")
     or die "Can't open movie_list.txt: $!";
 print $fh_list $movie_list;
 close $fh_list;

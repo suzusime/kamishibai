@@ -73,6 +73,9 @@ my $cid = 1700;
 # Windowsから見た実行ディレクトリの絶対パス
 my $dirpath = "D:/projects/kamishibai";
 
+# 中間ファイルを生成するフォルダ名
+my $intermediate_dir = "intermediate";
+
 # 台本が入る配列
 # 中身はページハッシュへの参照
 # ページハッシュの形式は
@@ -229,7 +232,7 @@ sub draw_jimaku {
 sub get_wav_length {
     my ($wavname) = @_;
     sleep(1);
-    my $read = Audio::Wav -> read( $wavname )
+    my $read = Audio::Wav -> read( "$intermediate_dir/$wavname" )
         or die "Can't open $wavname: $!";
     my $length = $read->length_seconds();
     #my $command = "ffprobe  -hide_banner -show_entries format=duration $wavname";
@@ -249,7 +252,7 @@ sub get_wav_length {
 sub make_voice {
     my ($page_num, $text) = @_;
     my $wavname = "v${page_num}.wav";
-    my $wavpath = "$dirpath/$wavname";
+    my $wavpath = "$dirpath/$intermediate_dir/$wavname";
     my $command = "seikasay.exe -cid $cid -save $wavpath -t \"$text\"";
     system($command);
     my $length = get_wav_length $wavname;
@@ -307,8 +310,8 @@ sub process_manuscript {
         my $img_plus_char = $img->copy();
         $img_plus_char->rubthrough(src=>$charimg,
             tx=>930, ty=>220);
-        my $output_name = $output_prefix . $page_num . ".png";
-        $img_plus_char->write(file=>$output_name)
+        my $output_name = "${output_prefix}${page_num}.png";
+        $img_plus_char->write(file=>"$intermediate_dir/$output_name")
             or die "Cannot save $output_name: ", $img.errstr;
 
         # 台本へ追加
@@ -349,7 +352,7 @@ wt 5;
 # print Dumper @manuscript;
 process_manuscript;
 
-open (my $fh_movie_script, ">", "movie_script.txt")
+open (my $fh_movie_script, ">", "$intermediate_dir/movie_script.txt")
     or die "Can't open movie_script.txt: $!";
 print $fh_movie_script $movie_script;
 close $fh_movie_script or die "$fh_movie_script: $!";
