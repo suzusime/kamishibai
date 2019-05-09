@@ -12,6 +12,8 @@ Encode::Locale::decode_argv;
 
 use Data::Dumper;
 use Imager;
+use Audio::Wav;
+use Time::HiRes 'usleep';
 
 # フォントの定義
 my $midashi_font_filename = "GenShinGothic-P-Bold.ttf";
@@ -51,6 +53,12 @@ my $output_prefix = "p",
 
 # そのページが始まるまでの経過時間
 my $elapsed_time = 0;
+
+# seikasayで使うcid
+my $cid = 1700;
+
+# Windowsから見た実行ディレクトリの絶対パス
+my $dirpath = "D:/projects/kamishibai";
 
 # 台本が入る配列
 # 中身はページハッシュへの参照
@@ -98,6 +106,25 @@ sub wt {
     my %elm = (
         type => "wt",
         time => $second
+    );
+    push @{$manuscript[$#manuscript]{elms}}, \%elm;
+}
+
+sub talk {
+    my ($text) = @_;
+
+    # あとで字幕をつけることも考えて、新しいページをつくることにする
+    my %page = (
+        continue => 1,
+        type => "talk",
+        elms => [],
+        text => $text,
+    );
+    push @manuscript, \%page;
+
+    my %elm = (
+        type => "talking",
+        text => $text
     );
     push @{$manuscript[$#manuscript]{elms}}, \%elm;
 }
@@ -163,9 +190,29 @@ sub draw_i1 {
     $last_y += $loc_bottom_margin;
 }
 
+sub get_wav_length {
+    my ($wavname) = @_;
+    sleep(1);
+    my $read = Audio::Wav -> read( $wavname )
+        or die "Can't open $wavname: $!";
+    return $read->length_seconds();
+}
+
+sub make_voice {
+    my ($page_num, $text) = @_;
+    my $wavname = "v${page_num}.wav";
+    my $wavpath = "$dirpath/$wavname";
+    my $command = "seikasay.exe -cid $cid -save $wavpath -t \"$text\"";
+    system($command);
+    my $length = get_wav_length $wavname;
+    return $length;
+}
+
 # @manuscriptに組み上げた台本を処理する
 sub process_manuscript {
     foreach my $page (@manuscript) {
+        my $page_num = sprintf("%04d", $page_counter);
+
         # ページが切り替わる場合は初期化する
         if (! $page->{continue} ){
             $img = $bgimg->copy();
@@ -176,6 +223,7 @@ sub process_manuscript {
         my $ptype = $page->{type};
         if ( $ptype eq "section") { draw_section $page->{text} }
         elsif ( $ptype eq "i1") { draw_i1 $page->{text} }
+        elsif ( $ptype eq "talk") { }
         else { die "This page type has not implemented: $ptype" }
 
         # 継続時間を計算する
@@ -187,6 +235,11 @@ sub process_manuscript {
                 if ($etype eq "wt"){
                     $continue_time += $elm->{time};
                 }
+                elsif ($etype eq "talking"){
+                    my $text = $elm->{text};
+                    my $length = make_voice $page_num, $text;
+                    $continue_time += $length;
+                }
                 else {
                     die "This element type has not implemented: $etype";
                 }
@@ -194,7 +247,6 @@ sub process_manuscript {
         }
 
         # 画像出力
-        my $page_num = sprintf("%04d", $page_counter);
         my $output_name = $output_prefix . $page_num . ".png";
         $img->write(file=>$output_name)
             or die "Cannot save $output_name: ", $img.errstr;
@@ -211,9 +263,15 @@ sub process_manuscript {
 # ここから内容定義
 section "講座の内容";
 wt 5;
-i1 "ご注文は、うさぎですか？";
+i1 "端末を使ってみよう";
+talk "まずは、所謂黒い画面でコンピュータを操作する方法について解説します";
 wt 5;
 i1 "スクリプトを書いてみよう";
+wt 5;
+section "ご注文は、うさぎですか？";
+i1 "喫茶店が舞台の物語";
+wt 5;
+i1 "爆破要素はない";
 wt 5;
 
 # 実際の出力処理

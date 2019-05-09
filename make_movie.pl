@@ -18,6 +18,10 @@ open(my $fh, "<", $script_name)
 
 while (<$fh>) {
     my ($elapsed, $continue, $image_name) = split /\s+/, $_;
+    if($continue == 0){
+        # 長さ0の場合は動画を生成しない
+        next;
+    }
     $image_name =~ /([0-9]+)/;
     my $number = $1;
     my $output_name = "m${number}.mp4";
