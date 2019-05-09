@@ -44,6 +44,11 @@ my $bgimg = Imager->new(file=>"nc184832.png")
 
 my $img = $bgimg->copy();
 
+# キャラ画像
+# とりあえず1つだけ出す
+my $charimg = Imager->new(file=>"kiritan.png")
+    or die Imager->errstr();
+
 # 左の余白
 my $left_margin = 50;
 
@@ -299,8 +304,11 @@ sub process_manuscript {
         }
 
         # 画像出力
+        my $img_plus_char = $img->copy();
+        $img_plus_char->rubthrough(src=>$charimg,
+            tx=>930, ty=>220);
         my $output_name = $output_prefix . $page_num . ".png";
-        $img->write(file=>$output_name)
+        $img_plus_char->write(file=>$output_name)
             or die "Cannot save $output_name: ", $img.errstr;
 
         # 台本へ追加
@@ -324,12 +332,12 @@ wt 2;
 i1 "スクリプトを書いてみよう";
 talk "次に、手作業でやっていたコマンド入力を自動化する方法について解説します";
 wt 1;
-talk "色々な方法がありますが、今回はシェルスクリプトとMakefileを紹介します。";
+talk "色々な方法がありますが、今回はRakeというものを紹介します";
 wt 2;
 section "端末";
 talk "では、早速端末の話から始めます";
 wt 2;
-i1 "端末 (terminal)：\n　コンピュータから見た人間の側の端っこ";
+i1 "端末 (terminal)：\n コンピュータから見た人間の側の端";
 talk "端末は、英語でterminalと言います";
 wt 1;
 talk "「終点」という意味の言葉ですね";
