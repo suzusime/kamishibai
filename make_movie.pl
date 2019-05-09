@@ -27,9 +27,9 @@ while (<$fh>) {
     my $output_name = "m${number}.mp4";
     if($has_voice){
         my $voice_name = "v${number}.wav";
-        system "ffmpeg -y -i $voice_name -loop 1 -i $image_name -t $continue -vcodec libx264 -pix_fmt yuv420p -c:a aac $output_name";
+        system "ffmpeg -y -i $voice_name -loop 1 -i $image_name -t $continue -vcodec libx264 -pix_fmt yuv420p -c:a aac -ac 2 -ar 44100 $output_name";
     } else {
-        system "ffmpeg -y -loop 1 -i $image_name -t $continue -vcodec libx264 -pix_fmt yuv420p $output_name";
+        system "ffmpeg -y -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -loop 1 -i $image_name -t $continue -vcodec libx264 -pix_fmt yuv420p $output_name";
     }
     $movie_list .= "file $output_name\n"
 }
