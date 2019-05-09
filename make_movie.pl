@@ -17,7 +17,7 @@ open(my $fh, "<", $script_name)
     or die "Can't open $script_name: $!";
 
 while (<$fh>) {
-    my ($elapsed, $continue, $image_name) = split /\s+/, $_;
+    my ($elapsed, $continue, $has_voice, $image_name) = split /\s+/, $_;
     if($continue == 0){
         # 長さ0の場合は動画を生成しない
         next;
@@ -25,7 +25,12 @@ while (<$fh>) {
     $image_name =~ /([0-9]+)/;
     my $number = $1;
     my $output_name = "m${number}.mp4";
-    system "ffmpeg -y -loop 1 -i $image_name -t $continue -vcodec libx264 -pix_fmt yuv420p $output_name";
+    if($has_voice){
+        my $voice_name = "v${number}.wav";
+        system "ffmpeg -y -i $voice_name -loop 1 -i $image_name -t $continue -vcodec libx264 -pix_fmt yuv420p -c:a aac $output_name";
+    } else {
+        system "ffmpeg -y -loop 1 -i $image_name -t $continue -vcodec libx264 -pix_fmt yuv420p $output_name";
+    }
     $movie_list .= "file $output_name\n"
 }
 

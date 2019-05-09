@@ -193,9 +193,22 @@ sub draw_i1 {
 sub get_wav_length {
     my ($wavname) = @_;
     sleep(1);
+    # Audio::Wavは不正確な情報を返すのでやめる
     my $read = Audio::Wav -> read( $wavname )
         or die "Can't open $wavname: $!";
-    return $read->length_seconds();
+    my $length = $read->length_seconds();
+    #my $command = "ffprobe  -hide_banner -show_entries format=duration $wavname";
+    #my $length = 0;
+    #open my $rs, "$command 2>&1 |";
+    #while(<$rs>) {
+    #    if($_ =~ /^duration=([0-9\.]+)/){
+    #        $length = $1;
+    #    }
+    #}
+    #close $rs;
+    #say $length;
+    #die;
+    return $length;
 }
 
 sub make_voice {
@@ -226,6 +239,9 @@ sub process_manuscript {
         elsif ( $ptype eq "talk") { }
         else { die "This page type has not implemented: $ptype" }
 
+        # 音声を持っているかのフラグ
+        my $has_voice = 0;
+
         # 継続時間を計算する
         my $continue_time = 0;
         my $elms_ref = $page->{elms};
@@ -239,6 +255,7 @@ sub process_manuscript {
                     my $text = $elm->{text};
                     my $length = make_voice $page_num, $text;
                     $continue_time += $length;
+                    $has_voice = 1;
                 }
                 else {
                     die "This element type has not implemented: $etype";
@@ -252,7 +269,7 @@ sub process_manuscript {
             or die "Cannot save $output_name: ", $img.errstr;
 
         # 台本へ追加
-        $movie_script .= "$elapsed_time $continue_time $output_name\n";
+        $movie_script .= "$elapsed_time $continue_time $has_voice $output_name\n";
 
         # 次へ進む
         $page_counter++;
