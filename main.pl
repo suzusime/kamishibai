@@ -12,16 +12,26 @@ Encode::Locale::decode_argv;
 
 use Imager;
 
+# フォントの定義
 my $midashi_font_filename = "GenShinGothic-P-Bold.ttf";
-my $midashi_font = Imager::Font->new(file=>$midashi_font_filename)
+my $midashi_font = Imager::Font->new(
+    file => $midashi_font_filename,
+    color => 'white',
+    aa => 1)
     or die "Cannot load $midashi_font_filename: ", Imager->errstr;
 
 my $font_filename = "APJapanesefont.ttf";
-my $font = Imager::Font->new(file=>$font_filename)
+my $font = Imager::Font->new(
+    file => $font_filename,
+    color => 'white',
+    aa => 1)
     or die "Cannot load $font_filename: ", Imager->errstr;
 
-my $img = Imager->new(file=>"nc184832.png")
+# 背景画像を開く
+my $bgimg = Imager->new(file=>"nc184832.png")
     or die Imager->errstr();
+
+my $img = $bgimg->copy();
 
 # 左の余白
 my $left_margin = 50;
@@ -35,13 +45,16 @@ my $page_counter = 0;
 # 前回最後に挿入された座標
 my $last_y = $top_margin;
 
+# 出力ファイルのprefix
+my $output_prefix = "p",
+
 # 台本が入る配列
 # 中身はページハッシュへの参照
 # ページハッシュの形式は
 # (
 #   continue => 1, #前のものを消去しない
 #   type => "i1", #そこで追加するもののタイプ
-#   cont_list => [ @cont ] # 継続要素の参照の配列への参照
+#   elms => [ @con ] # 継続要素の参照の配列への参照
 # )
 # 継続要素とは、各ページの継続時間を決めるもの（音声や動画）
 # 必ずtypeキーを持つハッシュだが、他の要素はタイプにより存在したりしなかったり
@@ -49,7 +62,42 @@ my @manuscript = ();
 
 # そのページの見出し
 # TeXのsection相当かなということでこの名前
-sub add_section {
+sub section {
+    my ($text) = @_;
+    my %page = (
+        continue => 0,
+        type => "section",
+        elms => [],
+        text => $text,
+    );
+    push @manuscript, \%page;
+}
+
+# インデント1の箇条書き
+sub i1 {
+    my ($text) = @_;
+    my %page = (
+        continue => 1,
+        type => "i1",
+        elms => [],
+        text => $text,
+    );
+    push @manuscript, \%page;
+}
+
+# waitをかける
+sub wt {
+    my ($second) = @_;
+    my %elm = (
+        type => "wt",
+        time => $second
+    );
+    my $elms_ref = $manuscript[$#manuscript]{elms};
+    my @elms = @$elms_ref;
+    push @elms, \%elm;
+}
+
+sub draw_section {
     my ($src_text) = @_;
     my $text_size = 60;
     my $loc_top_margin = 0;
@@ -65,7 +113,6 @@ sub add_section {
         $midashi_font->align(
             string => $line,
             size => $text_size,
-            color => 'white',
             x => $loc_left_margin + $indent,
             y => $last_y,
             halign => 'left',
@@ -75,8 +122,7 @@ sub add_section {
     $last_y += $loc_bottom_margin;
 }
 
-# インデント1の箇条書き
-sub add_i1 {
+sub draw_i1 {
     my ($src_text) = @_;
     my $text_size = 60;
     my $loc_top_margin = 0;
@@ -91,7 +137,6 @@ sub add_i1 {
     $font->align(
         string => $marker,
         size => $text_size,
-        color => 'white',
         x => $loc_left_margin,
         y => $last_y,
         halign => 'left',
@@ -113,10 +158,34 @@ sub add_i1 {
     $last_y += $loc_bottom_margin;
 }
 
-# ここから内容定義
-add_section "講座の内容";
-add_i1 "コマンドラインを使ってみよう";
-add_i1 "スクリプトを書いてみよう";
+# @manuscriptに組み上げた台本を処理する
+sub process_manuscript {
+    foreach my $page (@manuscript) {
+        # ページが切り替わる場合は初期化する
+        if (! $page->{continue} ){
+            $img = $bgimg->copy();
+            $last_y = $top_margin;
+        }
 
-$img->write(file=>'sm1.png')
-    or die 'Cannot save file: ', $img.errstr;
+        my $ptype = $page->{type};
+        if ( $ptype eq "section") { draw_section $page->{text} }
+        elsif ( $ptype eq "i1") { draw_i1 $page->{text} }
+        else { die "This page type is not implemented: $ptype" }
+
+        # 画像出力
+        my $page_num = sprintf("%04d", $page_counter);
+        my $output_name = $output_prefix . $page_num . ".png";
+        $img->write(file=>$output_name)
+            or die "Cannot save $output_name: ", $img.errstr;
+        $page_counter++;
+    }
+}
+
+# ここから内容定義
+section "講座の内容";
+wt 1;
+i1 "ご注文は、うさぎですか？";
+i1 "スクリプトを書いてみよう";
+
+# 実際の出力処理
+process_manuscript;
