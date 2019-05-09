@@ -10,6 +10,7 @@ binmode(STDOUT, ":encoding(console_out)");
 binmode(STDERR, ":encoding(console_out)");
 Encode::Locale::decode_argv;
 
+use Data::Dumper;
 use Imager;
 
 # フォントの定義
@@ -48,6 +49,9 @@ my $last_y = $top_margin;
 # 出力ファイルのprefix
 my $output_prefix = "p",
 
+# そのページが始まるまでの経過時間
+my $elapsed_time = 0;
+
 # 台本が入る配列
 # 中身はページハッシュへの参照
 # ページハッシュの形式は
@@ -59,6 +63,9 @@ my $output_prefix = "p",
 # 継続要素とは、各ページの継続時間を決めるもの（音声や動画）
 # 必ずtypeキーを持つハッシュだが、他の要素はタイプにより存在したりしなかったり
 my @manuscript = ();
+
+# 動画生成用の台本データ
+my $movie_script = "";
 
 # そのページの見出し
 # TeXのsection相当かなということでこの名前
@@ -92,9 +99,7 @@ sub wt {
         type => "wt",
         time => $second
     );
-    my $elms_ref = $manuscript[$#manuscript]{elms};
-    my @elms = @$elms_ref;
-    push @elms, \%elm;
+    push @{$manuscript[$#manuscript]{elms}}, \%elm;
 }
 
 sub draw_section {
@@ -167,17 +172,39 @@ sub process_manuscript {
             $last_y = $top_margin;
         }
 
+        # 描画処理
         my $ptype = $page->{type};
         if ( $ptype eq "section") { draw_section $page->{text} }
         elsif ( $ptype eq "i1") { draw_i1 $page->{text} }
-        else { die "This page type is not implemented: $ptype" }
+        else { die "This page type has not implemented: $ptype" }
+
+        # 継続時間を計算する
+        my $continue_time = 0;
+        my $elms_ref = $page->{elms};
+        if(@$elms_ref){
+            foreach my $elm (@$elms_ref) {
+                my $etype = $elm->{type};
+                if ($etype eq "wt"){
+                    $continue_time += $elm->{time};
+                }
+                else {
+                    die "This element type has not implemented: $etype";
+                }
+            }
+        }
 
         # 画像出力
         my $page_num = sprintf("%04d", $page_counter);
         my $output_name = $output_prefix . $page_num . ".png";
         $img->write(file=>$output_name)
             or die "Cannot save $output_name: ", $img.errstr;
+
+        # 台本へ追加
+        $movie_script .= "$elapsed_time $continue_time $output_name\n";
+
+        # 次へ進む
         $page_counter++;
+        $elapsed_time += $continue_time;
     }
 }
 
@@ -185,7 +212,15 @@ sub process_manuscript {
 section "講座の内容";
 wt 1;
 i1 "ご注文は、うさぎですか？";
+wt 2;
 i1 "スクリプトを書いてみよう";
+wt 3;
 
 # 実際の出力処理
+# print Dumper @manuscript;
 process_manuscript;
+
+open (my $fh_movie_script, ">", "movie_script.txt")
+    or die "Can't open movie_script.txt: $!";
+print $fh_movie_script $movie_script;
+close $fh_movie_script or die "$fh_movie_script: $!";
