@@ -51,3 +51,6 @@
 1. SeikaCenterと音声ライブラリを起動する
 
 1. `$ rake`
+
+# ライセンス
+[LICENSE](LICENSE)を参照してください。

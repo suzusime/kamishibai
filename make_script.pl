@@ -23,7 +23,7 @@ my $midashi_font = Imager::Font->new(
     aa => 1)
     or die "Cannot load $midashi_font_filename: ", Imager->errstr;
 
-my $font_filename = "APJapanesefont.ttf";
+my $font_filename = "851tegaki_zatsu_normal_0883.ttf";
 my $font = Imager::Font->new(
     file => $font_filename,
     color => 'white',
@@ -39,7 +39,7 @@ my $jimaku_font = Imager::Font->new(
     or die "Cannot load $midashi_font_filename: ", Imager->errstr;
 
 # 背景画像を開く
-my $bgimg = Imager->new(file=>"nc184832.png")
+my $bgimg = Imager->new(file=>"kokuban.png")
     or die Imager->errstr();
 
 my $img = $bgimg->copy();
@@ -157,7 +157,7 @@ sub draw_section {
     my ($src_text) = @_;
     my $text_size = 60;
     my $loc_top_margin = 0;
-    my $loc_bottom_margin = 50;
+    my $loc_bottom_margin = 30;
     my $loc_left_margin = $left_margin + 0;
     my $line_height = 60;
     my $indent = 30;
@@ -180,12 +180,12 @@ sub draw_section {
 
 sub draw_i1 {
     my ($src_text) = @_;
-    my $text_size = 60;
+    my $text_size = 40;
     my $loc_top_margin = 0;
-    my $loc_bottom_margin = 30;
-    my $loc_left_margin = $left_margin + 80;
-    my $line_height = 60;
-    my $indent = 30;
+    my $loc_bottom_margin = 20;
+    my $loc_left_margin = $left_margin + 60;
+    my $line_height = 40;
+    my $indent = 20;
     $last_y += $loc_top_margin;
 
     # 箇条書きマーカー
@@ -223,8 +223,8 @@ sub draw_jimaku {
     $jimaku_font->align(
         string => $text,
         size => $text_size,
-        x => 640,
-        y => 660,
+        x => 600,
+        y => 690,
         halign => 'center',
         image => $img);
 }
@@ -310,8 +310,9 @@ sub process_manuscript {
 
         # 画像出力
         my $img_plus_char = $img->copy();
+        # キャラクターの画像を重ねる
         $img_plus_char->rubthrough(src=>$charimg,
-            tx=>930, ty=>220);
+            tx=>950, ty=>190);
         my $output_name = "${output_prefix}${page_num}.png";
         print "generating image $output_name...";
         $img_plus_char->write(file=>"$intermediate_dir/$output_name")
