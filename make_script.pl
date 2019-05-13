@@ -14,6 +14,8 @@ use Data::Dumper;
 use Imager;
 use Audio::Wav;
 use Time::HiRes 'usleep';
+use Cwd;
+my $cwd = getcwd();
 
 # フォントの定義
 my $midashi_font_filename = "GenShinGothic-P-Bold.ttf";
@@ -71,9 +73,16 @@ my $elapsed_time = 0;
 my $cid = 1700;
 
 # Windowsから見た実行ディレクトリの絶対パス
-my $dirpath = "D:/projects/kamishibai";
+my $dirpath = "";
+open my $winpath_rs, "wslpath -w $cwd 2>&1 |";
+while(<$winpath_rs>) {
+    chomp;
+    $_ =~ s/\\/\//g;
+    $dirpath = $_;
+}
 
 # 中間ファイルを生成するフォルダ名
+
 my $intermediate_dir = "intermediate";
 
 # 台本が入る配列

@@ -2,7 +2,7 @@
 紙芝居動画メーカー
 
 ## 依存
-**Windows 10 + WSL(Ubuntu 18.04) 環境で書いています。WSL内でしか動かないかは分かりませんが、SeikaCenterに依存するのでWindows環境であることは少なくとも必須です。**
+**Windows 10 + WSL(Ubuntu 18.04) 環境で書いています。SeikaCenterがWindows専用かつ`wslpath`を使っているので、（そのままでは）これ以外の環境では動きません**
 
 ### 必須
 - Perl 5.14以降
@@ -39,13 +39,6 @@
     ```perl
     #ここを編集
     my $cid = 1700;
-    ```
-1. `make_script.pl` の実行ファイルパス部分を、このスクリプトを置いた場所（＝リポジトリをcloneした場所）に合わせて変更
-    - WSLからWindows側の絶対パスをとる方法がよくわからないので手書きするようにしています
-
-    ```perl
-    # Windowsから見た実行ディレクトリの絶対パス
-    my $dirpath = "D:/projects/kamishibai";
     ```
 
 1. SeikaCenterと音声ライブラリを起動する
