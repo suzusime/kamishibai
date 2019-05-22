@@ -97,6 +97,17 @@ my $intermediate_dir = "intermediate";
 # 必ずtypeキーを持つハッシュだが、他の要素はタイプにより存在したりしなかったり
 my @manuscript = ();
 
+# forground images（前面に出す画像群）
+# 内容はハッシュ
+# (
+#     l => 0, #画像を出すレイヤ。数字が大きいほうが前
+#     x => 0, #画像を出す座標
+#     y => 0, #画像を出す座標
+#     scale => 1, #画像の拡大率
+#     name => "hoge.png", #画像の名前。images以下に入れるのでそこからの相対パス
+# )
+my @forg_images = ();
+
 # 動画生成用の台本データ
 my $movie_script = "";
 
@@ -162,6 +173,23 @@ sub talk {
     push @{$manuscript[$#manuscript]{elms}}, \%elm;
 }
 
+sub add_image {
+    my %args = @_;
+
+    # デフォルト値を代入
+    $args{x} //= 0;
+    $args{y} //= 0;
+    $args{scale} //= 1;
+
+    my %page = (
+        continue => 1,
+        type => "add_image",
+        elms => [],
+        params => \%args,
+    );
+    push @manuscript, \%page;
+}
+
 sub draw_section {
     my ($src_text) = @_;
     my $text_size = 60;
@@ -223,6 +251,14 @@ sub draw_i1 {
     $last_y += $loc_bottom_margin;
 }
 
+sub draw_add_image {
+    my %args = @_;
+
+    @forg_images = grep $_->{l} != $args{l}, @forg_images;
+    push(@forg_images, \%args);
+    @forg_images = sort {$a->{l} <=> $b->{l}} @forg_images;
+}
+
 sub draw_jimaku {
     my ($src_text) = @_;
     my $text_size = 20;
@@ -279,6 +315,7 @@ sub process_manuscript {
         if (! $page->{continue} ){
             $img = $bgimg->copy();
             $last_y = $top_margin;
+            @forg_images = ();
         }
 
         # 描画処理
@@ -291,6 +328,7 @@ sub process_manuscript {
             draw_jimaku $page->{text};
             $will_be_reverted=1;
         }
+        elsif ( $ptype eq "add_image"){ draw_add_image %{$page->{params}} }
         else { die "This page type has not implemented: $ptype" }
 
         # 音声を持っているかのフラグ
@@ -319,6 +357,16 @@ sub process_manuscript {
 
         # 画像出力
         my $img_plus_char = $img->copy();
+        # 前面画像を描画
+        foreach my $fg (@forg_images){
+            my %params = %$fg;
+            my $fgimg = Imager->new(file=> "images/".$params{name})
+                or die Imager->errstr();
+            $img_plus_char->rubthrough(src=>$fgimg,
+                tx => $params{x},
+                ty => $params{y},
+            );
+        }
         # キャラクターの画像を重ねる
         $img_plus_char->rubthrough(src=>$charimg,
             tx=>950, ty=>190);
@@ -339,28 +387,29 @@ sub process_manuscript {
 }
 
 # ここから内容定義
-section "講座の内容";
+section "このツールの機能紹介";
 wt 1;
-i1 "端末を使ってみよう";
-talk "まずは、所謂黒い画面でコンピュータを操作する方法について解説します";
+i1 "テキストの表示";
+talk "このように、テキストを表示できます";
 wt 1;
-talk "なにも難しいことはないので、気楽に試してみましょう";
+talk "スライド発表風のものを求めて作ったので箇条書き風です";
 wt 2;
-i1 "スクリプトを書いてみよう";
-talk "次に、手作業でやっていたコマンド入力を自動化する方法について解説します";
+i1 "読み上げ機能";
+talk "既にやっているように、テキストを読み上げてもらうことができます";
 wt 1;
-talk "色々な方法がありますが、今回はRakeというものを紹介します";
+talk "字幕もこのようにいいかんじに出ます";
 wt 2;
-section "端末";
-talk "では、早速端末の話から始めます";
-wt 2;
-i1 "端末 (terminal)：\n コンピュータから見た人間の側の端";
-talk "端末は、英語でterminalと言います";
+section "画像表示";
 wt 1;
-talk "「終点」という意味の言葉ですね";
-wt 5;
-i1 "（以下略）";
-wt 5;
+add_image (l=>0, x=>200, y=>200, name=>"sample.png");
+wt 1;
+talk "こんなふうに画像を挿入することもできます";
+wt 2;
+section "音楽の挿入";
+i1 "未実装";
+wt 1;
+talk "BGMや効果音を挿入することができるようになると嬉しいですね";
+wt 1;
 
 # 実際の出力処理
 # print Dumper @manuscript;
