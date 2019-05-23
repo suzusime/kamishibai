@@ -51,6 +51,9 @@ my $img = $bgimg->copy();
 my $charimg = Imager->new(file=>"kiritan.png")
     or die Imager->errstr();
 
+# キャラ画像を出すかどうかのフラグ
+my $show_char = 1;
+
 # 左の余白
 my $left_margin = 50;
 
@@ -221,6 +224,24 @@ sub stop_music {
     push @manuscript, \%page;
 }
 
+sub add_char {
+    my %page = (
+        continue => 1,
+        type => "add_char",
+        elms => [],
+    );
+    push @manuscript, \%page;
+}
+
+sub remove_char {
+    my %page = (
+        continue => 1,
+        type => "remove_char",
+        elms => [],
+    );
+    push @manuscript, \%page;
+}
+
 sub draw_section {
     my ($src_text) = @_;
     my $text_size = 60;
@@ -373,6 +394,8 @@ sub process_manuscript {
                 $m->{end} = $elapsed_time;
             }
         }
+        elsif ($ptype eq "add_char") { $show_char = 1 }
+        elsif ($ptype eq "remove_char") { $show_char = 0 }
         else { die "This page type has not implemented: $ptype" }
 
         # 音声を持っているかのフラグ
@@ -413,7 +436,7 @@ sub process_manuscript {
         }
         # キャラクターの画像を重ねる
         $img_plus_char->rubthrough(src=>$charimg,
-            tx=>950, ty=>190);
+            tx=>950, ty=>190) if $show_char;
         my $output_name = "${output_prefix}${page_num}.png";
         print "generating image $output_name...";
         $img_plus_char->write(file=>"$intermediate_dir/$output_name")
@@ -431,6 +454,7 @@ sub process_manuscript {
 }
 
 # ここから内容定義
+remove_char;
 section "このツールの機能紹介";
 wt 1;
 i1 "テキストの表示";
@@ -438,6 +462,7 @@ talk "このように、テキストを表示できます";
 wt 1;
 talk "スライド発表風のものを求めて作ったので箇条書きです";
 wt 2;
+add_char;
 i1 "読み上げ機能";
 talk "既にやっているように、テキストを読み上げてもらうことができます";
 wt 1;
