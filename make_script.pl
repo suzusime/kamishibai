@@ -108,6 +108,15 @@ my @manuscript = ();
 # )
 my @forg_images = ();
 
+# bgmのリスト
+# 内容はハッシュ
+# (
+#     name => "sample.mp3",
+#     begin => 3.2,
+#     end => 10.3,
+# )
+my @musics = ();
+
 # 動画生成用の台本データ
 my $movie_script = "";
 
@@ -186,6 +195,28 @@ sub add_image {
         type => "add_image",
         elms => [],
         params => \%args,
+    );
+    push @manuscript, \%page;
+}
+
+sub play_music {
+    my ($name) = @_;
+    my %page = (
+        continue => 1,
+        type => "play_music",
+        elms => [],
+        name => $name,
+    );
+    push @manuscript, \%page;
+}
+
+sub stop_music {
+    my ($name) = @_;
+    my %page = (
+        continue => 1,
+        type => "stop_music",
+        elms => [],
+        name => $name,
     );
     push @manuscript, \%page;
 }
@@ -329,6 +360,19 @@ sub process_manuscript {
             $will_be_reverted=1;
         }
         elsif ( $ptype eq "add_image"){ draw_add_image %{$page->{params}} }
+        elsif ( $ptype eq "play_music"){
+            my %m = (
+                name => $page->{name},
+                begin => $elapsed_time,
+            );
+            push @musics, \%m;
+        }
+        elsif ( $ptype eq "stop_music"){
+            my @matched = grep { $_->{name} eq $page->{name}} @musics;
+            for my $m (@matched){
+                $m->{end} = $elapsed_time;
+            }
+        }
         else { die "This page type has not implemented: $ptype" }
 
         # 音声を持っているかのフラグ
@@ -392,7 +436,7 @@ wt 1;
 i1 "テキストの表示";
 talk "このように、テキストを表示できます";
 wt 1;
-talk "スライド発表風のものを求めて作ったので箇条書き風です";
+talk "スライド発表風のものを求めて作ったので箇条書きです";
 wt 2;
 i1 "読み上げ機能";
 talk "既にやっているように、テキストを読み上げてもらうことができます";
@@ -406,10 +450,13 @@ wt 1;
 talk "こんなふうに画像を挿入することもできます";
 wt 2;
 section "音楽の挿入";
-i1 "未実装";
+play_music "sample.mp3";
+i1 "BGMのみ実装";
 wt 1;
-talk "BGMや効果音を挿入することができるようになると嬉しいですね";
+talk "BGMを挿入することができるようになりました";
 wt 1;
+talk "1回限りの効果音も挿入できるようになるといいですね";
+wt 5;
 
 # 実際の出力処理
 # print Dumper @manuscript;
@@ -421,3 +468,16 @@ open (my $fh_movie_script, ">", "$intermediate_dir/movie_script.txt")
 print $fh_movie_script $movie_script;
 print " finish.\n";
 close $fh_movie_script or die "$fh_movie_script: $!";
+
+print "saving music_list...";
+open (my $fh_music_list, ">", "$intermediate_dir/music_list.txt")
+    or die "Can't open music_list.txt: $!";
+foreach my $m (@musics){
+    my $name = $m->{name};
+    my $begin = $m->{begin};
+    my $end = $m->{end} // $elapsed_time;
+    my $line = "$name $begin $end\n";
+    print $fh_music_list $line;
+}
+print " finish.\n";
+close $fh_music_list or die "$fh_music_list: $!";

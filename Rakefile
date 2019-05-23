@@ -12,8 +12,14 @@ end
 task :concat_movie => :make_each_movie do
   puts "concatinating movies..."
   cd "intermediate" do
-	  sh "ffmpeg -loglevel error  -y -f concat -i movie_list.txt -c:v copy -c:a copy ../output.mp4"
+    sh "ffmpeg -loglevel error  -y -f concat -i movie_list.txt -c:v copy -c:a copy no_bgm.mp4"
   end
+  puts "finish."
+end
+
+task :merge_music => :concat_movie do
+  puts "merging bgm..."
+  sh "perl merge_music.pl"
   puts "finish."
 end
 
@@ -29,4 +35,4 @@ task :clean => :clean_intermediate do
   rm_f("output.mp4")
 end
 
-task :default => :concat_movie
+task :default => :merge_music
